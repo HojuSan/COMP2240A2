@@ -75,18 +75,20 @@ public class c3244203A2P1 {
         //create North farmers
         for (int i=0; i<N; i++)
         {
+            //creates north farmers
             f[i] = new Farmer("N_Farmer"+(i+1),"North",bridge);
 
-            //not sure if this works
+            //makes the farmer a thread then starts it
             th = new Thread(f[i]);
             th.start();
         }
         //create South farmers
         for (int i=N; i<S+N; i++) 
         {
+            //creates south farmers
             f[i]= new Farmer("S_Farmer"+(i-N+1),"South",bridge);
 
-            //not sure if this works
+            //makes the farmer a thread then starts it
             th = new Thread(f[i]);
             th.start();
         }
@@ -106,6 +108,8 @@ class Farmer implements Runnable
     private String id;          
     //bridge that connects the islands   
     private Bridge bridge; 
+
+    //checks how many times its crossed
     private int crossed;
 
     //constructor
@@ -160,18 +164,25 @@ class Farmer implements Runnable
         this.crossed++;
     }
 
+    //run function
     @Override   
     public void run() 
     {
         while(true)
         {
-            //starvation prevention
+            //starvation prevention using counter system
             if(this.crossed <= bridge.getStarve())
             { 
                 bridge.crossBridge(this);
-                
+                try 
+                {
+                    TimeUnit.MILLISECONDS.sleep(500);
+                } 
+                catch (InterruptedException e) {}
+
                 System.out.println(this.id + ": Waiting for bridge. Going towards " + destination); 
             }
+            //waits a bit before it retries
             else
             {
                 try 
@@ -187,8 +198,11 @@ class Farmer implements Runnable
 
 class Bridge 
 {
-    private int neon;    //Count the number of crossings
+    //count the number of total crossings
+    private int neon;   
+    //the bridge is the semaphore
     private static Semaphore bridgeSem;
+    //various counters to prevent starvation
     private int starvePre = 0;
     private int counter = 0;
     private int farmNum;
@@ -199,11 +213,13 @@ class Bridge
     {
         this.neon=0;
         this.farmNum = farmNum;
-        bridgeSem = new Semaphore(1);   //one bridge resource, mutual exclusivity
+        //one bridge resource, mutual exclusivity
+        bridgeSem = new Semaphore(1);   
     }
 
     //Getters
-    public int getNeon() {
+    public int getNeon()
+     {
         return neon;
     }
 
@@ -218,10 +234,14 @@ class Bridge
         System.out.println("NEON = " + getNeon());
     }
 
-    public void crossBridge(Farmer f) { 
+    public void crossBridge(Farmer f)
+     { 
         //Semaphore acquire
-        try {   
+        try 
+        {   
+            //semaphore allows access
             bridgeSem.acquire();    
+            //prints the crossing and sleep in between for better reading
             System.out.println(f.getID()+": Crossing bridge Step 5.");
             TimeUnit.MILLISECONDS.sleep(500);
             System.out.println(f.getID()+": Crossing bridge Step 10.");
@@ -229,15 +249,17 @@ class Bridge
             System.out.println(f.getID()+": Crossing bridge Step 15.");
             TimeUnit.MILLISECONDS.sleep(500);
 
-            //Sleep for 200 units ,improves readability (else output is too fast) 
+            //Sleep for 500 milliseconds ,improves readability
             try 
             {
-               Thread.sleep(200);
+                Thread.sleep(200);
             } 
             catch (InterruptedException e) {} //No interrupts implemented, so thread shouldn't be interrupted?
 
+            //another required print result
             System.out.println(f.getID()+": Across the Bridge.");
             TimeUnit.MILLISECONDS.sleep(500);
+
             //this segments reverses the location and destination
             if(f.getLocation() == "North")
             {
@@ -253,8 +275,11 @@ class Bridge
             //increment NEON counter, synchronized to avoid print conflicts
             upNeon();  
             counter++;
+            //BUG TESTING
             //System.out.println("!!!!!!!counter "+ counter);
 
+            //once counter goes through all the farmer, it resets letting farmers who have already crossed
+            //also cross
             if(counter == farmNum)
             {
                 starvePre++;
@@ -263,17 +288,19 @@ class Bridge
 
             f.upCrossed();
 
-            System.out.println(f.getID()+": crossed "+ f.getCrossed() +" many times");
+            //bug testing for starvation
+//            System.out.println(f.getID()+": crossed "+ f.getCrossed() +" many times");
 
-            //Sleep for 200 units ,improves readability (else output is too fast) 
+            //Sleep for 500 milliseconds ,improves readability
             try
             {
                 TimeUnit.MILLISECONDS.sleep(500);
             }
-             catch (InterruptedException e) {} //No interrupts implemented, so thread shouldn't be interrupted?
+            catch (InterruptedException e) {} //No interrupts implemented, so thread shouldn't be interrupted?
         }
         catch (InterruptedException e) {} 
 
+        //semaphore is released
         bridgeSem.release();
     }
 }//end class
