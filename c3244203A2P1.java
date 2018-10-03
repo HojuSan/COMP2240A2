@@ -1,8 +1,10 @@
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.NoSuchElementException;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.Scanner;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 public class c3244203A2P1 {
 
@@ -65,30 +67,34 @@ public class c3244203A2P1 {
         data.close();
 
         //Create the bridge
-        Bridge bridge = new Bridge(); 
+        //starvePre to prevent starvation
+        Bridge bridge = new Bridge(N+S); 
         //Instantiate an array of Farmers
         Farmer[] f = new Farmer[N+S];   
+        Thread th;
         //create North farmers
         for (int i=0; i<N; i++)
         {
             f[i] = new Farmer("N_Farmer"+(i+1),"North",bridge);
+
+            //not sure if this works
+            th = new Thread(f[i]);
+            th.start();
         }
         //create South farmers
         for (int i=N; i<S+N; i++) 
         {
             f[i]= new Farmer("S_Farmer"+(i-N+1),"South",bridge);
-        }
 
-        //start all farmers
-        for (int i=0;i<S+N;i++) 
-        {
-            f[i].start();   //start Farmer Threads. Farmers can run start, as Farmer extends thread
+            //not sure if this works
+            th = new Thread(f[i]);
+            th.start();
         }
 
     }//end main
 }//end class
 
-class Farmer extends Thread implements Runnable
+class Farmer implements Runnable
 {
     //Home island
     private String home;
@@ -107,9 +113,9 @@ class Farmer extends Thread implements Runnable
     {
         //for future reference this means the object itself
         //aka the farmer for this
-        this.id=id;
-        this.location=location;
-        this.home=location;
+        this.id = id;
+        this.location = location;
+        this.home = location;
         this.bridge = bridge;
         this.crossed = 0;
 
@@ -141,6 +147,14 @@ class Farmer extends Thread implements Runnable
     }
 
     //setters
+    public void setLocation(String location)
+    {
+        this.location = location;
+    }
+    public void setDestination(String destination)
+    {
+        this.destination = destination;
+    }
     public void upCrossed()
     {
         this.crossed++;
@@ -149,7 +163,24 @@ class Farmer extends Thread implements Runnable
     @Override   
     public void run() 
     {
-        bridge.crossBridge(this);
+        while(true)
+        {
+            //starvation prevention
+            if(this.crossed <= bridge.getStarve())
+            { 
+                bridge.crossBridge(this);
+                
+                System.out.println(this.id + ": Waiting for bridge. Going towards " + destination); 
+            }
+            else
+            {
+                try 
+                {
+                    TimeUnit.MILLISECONDS.sleep(1000);
+                } 
+                catch (InterruptedException e) {}
+            }
+        }
     }  
 
 }//end class
@@ -157,59 +188,34 @@ class Farmer extends Thread implements Runnable
 class Bridge 
 {
     private int neon;    //Count the number of crossings
-    private static Semaphore bridgeSem; //semaphore to only allow 1 crossing at a time
-    private int northWaiting, southWaiting;
-    private int exited;
-    //Constructor
-    public Bridge() {
-        neon=0;
-        //was originally 2 not sure why
-        bridgeSem = new Semaphore(1);   //one bridge resource, mutual exclusivity
-        northWaiting = southWaiting = 0;
-        exited = 0;
+    private static Semaphore bridgeSem;
+    private int starvePre = 0;
+    private int counter = 0;
+    private int farmNum;
 
+
+    //Constructor
+    public Bridge(int farmNum) 
+    {
+        this.neon=0;
+        this.farmNum = farmNum;
+        bridgeSem = new Semaphore(1);   //one bridge resource, mutual exclusivity
     }
 
     //Getters
     public int getNeon() {
         return neon;
     }
+
+    public int getStarve()
+    {
+        return starvePre;
+    }
+
     //Methods
     public synchronized void upNeon() {
         neon++;
-        System.out.println("NEON = "+getNeon());
-    }
-    public synchronized void upThis(Farmer f) 
-    {
-        if (f.getID().startsWith("N")) 
-        {
-            northWaiting++;
-        }
-        else 
-        {
-            southWaiting++;
-        }
-    }
-    public synchronized void upExited() {
-        exited++;
-    }
-    public synchronized int getNorth() {
-        return northWaiting;
-    }
-    public synchronized int getSouth() {
-        return southWaiting;
-    }
-    public synchronized int getExited() {
-        return exited;
-    }
-    public synchronized void resetExited() {
-        exited=0;
-    }
-    public synchronized void resetNorth() {
-        northWaiting=0;
-    }
-    public synchronized void resetSouth() {
-        southWaiting=0;
+        System.out.println("NEON = " + getNeon());
     }
 
     public void crossBridge(Farmer f) { 
@@ -217,28 +223,57 @@ class Bridge
         try {   
             bridgeSem.acquire();    
             System.out.println(f.getID()+": Crossing bridge Step 5.");
+            TimeUnit.MILLISECONDS.sleep(500);
             System.out.println(f.getID()+": Crossing bridge Step 10.");
+            TimeUnit.MILLISECONDS.sleep(500);
             System.out.println(f.getID()+": Crossing bridge Step 15.");
+            TimeUnit.MILLISECONDS.sleep(500);
 
             //Sleep for 200 units ,improves readability (else output is too fast) 
             try 
             {
-                Thread.sleep(200);
+               Thread.sleep(200);
             } 
             catch (InterruptedException e) {} //No interrupts implemented, so thread shouldn't be interrupted?
 
             System.out.println(f.getID()+": Across the Bridge.");
-            upNeon();  //increment NEON counter, synchronized to avoid print conflicts
+            TimeUnit.MILLISECONDS.sleep(500);
+            //this segments reverses the location and destination
+            if(f.getLocation() == "North")
+            {
+                f.setLocation("South");
+                f.setDestination("North");
+            }
+            else
+            {
+                f.setLocation("North");
+                f.setDestination("South");
+            }
+
+            //increment NEON counter, synchronized to avoid print conflicts
+            upNeon();  
+            counter++;
+            //System.out.println("!!!!!!!counter "+ counter);
+
+            if(counter == farmNum)
+            {
+                starvePre++;
+                counter = 0;
+            }
+
             f.upCrossed();
+
             System.out.println(f.getID()+": crossed "+ f.getCrossed() +" many times");
+
             //Sleep for 200 units ,improves readability (else output is too fast) 
             try
             {
-                Thread.sleep(200);
+                TimeUnit.MILLISECONDS.sleep(500);
             }
              catch (InterruptedException e) {} //No interrupts implemented, so thread shouldn't be interrupted?
-             System.out.println(f.getID()+": crossed "+ f.getCrossed() +" many times" + "testing");
         }
         catch (InterruptedException e) {} 
+
+        bridgeSem.release();
     }
 }//end class
