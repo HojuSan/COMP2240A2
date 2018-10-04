@@ -234,7 +234,7 @@ class Bridge
         System.out.println("NEON = " + getNeon());
     }
 
-    public void crossBridge(Farmer f)
+    public synchronized void crossBridge(Farmer f)
      { 
         //Semaphore acquire
         try 
