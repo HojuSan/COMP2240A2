@@ -107,7 +107,7 @@ public class c3244203A2P2
         //Still not sure if i should make this into an array or not
         seat[] s = new seat[5];
         Thread th;
-/*
+
         for(int i = 0; i<cNum;i++)
         {
             //creates the customer with values
@@ -117,7 +117,7 @@ public class c3244203A2P2
             th = new Thread(c[i]);
             th.start();
         }
-*/
+
     }//end of main
 }//end of class
 

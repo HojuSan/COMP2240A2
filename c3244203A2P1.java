@@ -223,7 +223,7 @@ class Bridge
         return neon;
     }
 
-    public int getStarve()
+    public synchronized int getStarve()
     {
         return starvePre;
     }
