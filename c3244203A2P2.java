@@ -100,12 +100,12 @@ public class c3244203A2P2
         System.out.println("starting to create customers");
 
         //creating customers
-        customer[] c = new customer[cNum];
+        Customer[] c = new Customer[cNum];
         //creating 5 seats
         //
         //
         //Still not sure if i should make this into an array or not
-        seat[] s = new seat[5];
+        Seat s;
         Thread th;
 
         for(int i = 0; i<cNum;i++)
@@ -122,32 +122,97 @@ public class c3244203A2P2
 }//end of class
 
 //thread
-class customer implements Runnable
+class Customer implements Runnable
 {
     private String id;
     private int arrives;
+    private int sits;
     private int duration;
+    private boolean exit = false;
     private int leaves;
 
-    public customer(String id, int arrives, int duration)
+    public customer(String id, int arrives, int duration, Seat seat)
     {
         this.id = id;
         this.arrives = arrives;
         this.duration = duration;
     }
 
+    //Getters
+
+    //Setters
+    public void setLeaves(int leaves)
+    {
+        this.leaves = leaves;
+    }
+    public void setSits(int sits)
+    {
+        this.sits = sits;
+    }
+
     @Override
     public void run()
     {
-        System.out.println("customer is running as it should");
+        while(exit != true)
+        {
+            if(this.arrives <= getClock() && seat.getSeatAvailable())
+            {
+                System.out.println("customer is running");
+                seat.eatIceCream(this);
+            }
+            
+        }
+        
     }
 }//end of class
 
 //uses semaphore
-class seat
+class Seat
 {
+    private static Semaphore seatSem;
+    private int clockCounter = 0;
+    private boolean seatAvailable;
+
     public seat()
     {
-
+        seatSem = new Semaphore(5);
+        seatAvailable = true;
     }
+
+    //Getters
+    public synchronized int getClock()
+    {
+        return clockCounter;
+    }
+
+    public synchronized boolean getSeatAvailable()
+    {
+        return seatAvailable;
+    }
+
+    public synchronized void eatIceCream(Customer c)
+    {
+        //if 5 permits then reset flag system
+        if(seatSem.availablePermits()==5)
+        {
+            seatAvailable = true;
+        }
+        //if zero permits, that means all seats are full
+        if(seatSem.availablePermits()==0)
+        {
+            seatAvailable = false;
+        }
+
+        //aquire semaphore
+        seatSem.acquire();
+
+        //counter variable for the  arrival and leave times
+        clockCounter++;
+
+        //release semaphore
+        seatSem.release();
+    }
+
+
+    //Setters
 }//end of class
