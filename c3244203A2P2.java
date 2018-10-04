@@ -105,13 +105,20 @@ public class c3244203A2P2
         //
         //
         //Still not sure if i should make this into an array or not
-        Seat s;
+        Timer timer1 = new Timer(cNum);
+        Thread timeThread;
+        timeThread = new Thread(timer1);
+        timeThread.start();
+
+        Seat seat1 = new Seat(timer1);
         Thread th;
+
+        System.out.println("Customer    arrives     Seats       Leaves ");
 
         for(int i = 0; i<cNum;i++)
         {
             //creates the customer with values
-            c[i] = new customer(id.get(i), arrives.get(i), duration.get(i));
+            c[i] = new Customer(id.get(i), arrives.get(i), duration.get(i), seat1, timer1);
 
             //makes customer into a thread
             th = new Thread(c[i]);
@@ -130,15 +137,39 @@ class Customer implements Runnable
     private int duration;
     private boolean exit = false;
     private int leaves;
+    private Seat seat;
+    private Timer timer;
 
-    public customer(String id, int arrives, int duration, Seat seat)
+    public Customer(String id, int arrives, int duration, Seat seat, Timer timer)
     {
         this.id = id;
         this.arrives = arrives;
         this.duration = duration;
+        this.seat = seat;
+        this.timer = timer;
     }
 
     //Getters
+    public String getId()
+    {
+        return id;
+    }
+    public int getArrives()
+    {
+        return arrives;
+    }
+    public int getSits()
+    {
+        return sits;
+    }
+    public int getLeaves()
+    {
+        return leaves;
+    }
+    public int getDuration()
+    {
+        return duration;
+    }
 
     //Setters
     public void setLeaves(int leaves)
@@ -149,15 +180,18 @@ class Customer implements Runnable
     {
         this.sits = sits;
     }
+    public void setExit()
+    {
+        this.exit = true;
+    }
 
     @Override
     public void run()
     {
         while(exit != true)
         {
-            if(this.arrives <= getClock() && seat.getSeatAvailable())
+            if(this.arrives <= timer.getClock() && seat.getSeatAvailable())
             {
-                System.out.println("customer is running");
                 seat.eatIceCream(this);
             }
             
@@ -172,12 +206,16 @@ class Seat
     private static Semaphore seatSem;
     private int clockCounter = 0;
     private boolean seatAvailable;
+    private Timer timer;
 
-    public seat()
+    public Seat(Timer timer)
     {
         seatSem = new Semaphore(5);
         seatAvailable = true;
+        this.timer = timer;
     }
+
+    //Setters
 
     //Getters
     public synchronized int getClock()
@@ -203,16 +241,83 @@ class Seat
             seatAvailable = false;
         }
 
-        //aquire semaphore
-        seatSem.acquire();
+        try 
+        {
+            //aquire semaphore
+            seatSem.acquire();
 
-        //counter variable for the  arrival and leave times
-        clockCounter++;
+            //setting the time when customer sits
+            c.setSits(timer.getClock());
+
+            //setting the time when customer leaves
+            c.setLeaves(c.getSits()+c.getDuration());
+
+            //printing the values
+            System.out.println(c.getId()+"       "+c.getArrives() +"      "+c.getSits() +"     "+c.getLeaves() +" ");
+
+            c.setExit();
+            timer.upExitedCustomer();
+           
+        } 
+        catch (Exception e) 
+        {
+            //TODO: handle exception
+        }
 
         //release semaphore
         seatSem.release();
+
+         //counter variable for the  arrival and leave times
+         clockCounter++;
     }
 
 
-    //Setters
+ 
 }//end of class
+
+class Timer implements Runnable
+{
+    int clockCounter;
+    int exitedCustomer = 0;
+    int customerNum;
+    Timer(int customerNum)
+    {
+        clockCounter = 0;
+        this.customerNum = customerNum;
+    }
+
+    //getters
+    public synchronized int getClock()
+    {
+        return clockCounter;
+    }
+
+    //setters
+    public void upExitedCustomer()
+    {
+        exitedCustomer++;
+    }
+    
+
+    public void run()
+    {
+        for(;;) 
+        { 
+            if(exitedCustomer == customerNum)
+            {
+                break;
+            }
+
+            try 
+            { 
+                Thread.sleep(1000); 
+                clockCounter++; 
+            } 
+            catch (InterruptedException e) 
+            { 
+                // TODO Auto-generated catch block 
+                e.printStackTrace(); 
+            } 
+        }
+    }
+}
