@@ -22,14 +22,16 @@ public class c3244203A2P3
 
         //true false
         boolean success = false;    
+
         //setting variables for num of customers
         int cNum=0;
+
         //data from the file
         List<String> input = new LinkedList<String>();
         String token1 = "";
         List<String> id = new LinkedList<String>();
-        List<Integer> arrives  = new ArrayList<Integer>();
         List<Integer> duration  = new ArrayList<Integer>();
+
         //scanner saves next line file name into data
         Scanner data = new Scanner(System.in);
         System.out.println("Enter file name eg input.txt: ");
@@ -40,17 +42,14 @@ public class c3244203A2P3
             //try catch for getting the correct file
             try 
             {
-//  this is the section with the bugg
-
-//
                 //changes line into string
                 String str = data.nextLine();
                 //converts the string name of the file into an actual file 
                 //that the code can read
                 Scanner file1 = new Scanner(new File(str));
-                //try catch for getting correct contents of the file
 
-//
+
+                //try catch for getting correct contents of the file
                 try 
                 {
                     //split by  into string array outside while loop
@@ -59,27 +58,23 @@ public class c3244203A2P3
                     {
                         token1 = file1.next();
                         input.add(token1);
-                        //input = file.nextLine().split("\\s+");
+                        //System.out.println(token1);
                     }                  
 
-                    for(int i = 0; i < input.size(); i+=3)
-                    {
-                        //better to use this for string comparison
-                        //equal is 0
-                        if(input.get(i).compareToIgnoreCase("end") == 0)
-                        {
-                            //break loop if END
-                            success = true;
-                            break;
-                        }
+                    //saves the amount of customers
+                    cNum = Integer.parseInt(input.get(0));
 
-                        //Bug is here only loops once
-                        arrives.add(Integer.parseInt(input.get(i)));
-                        id.add(input.get(i+1));
-                        duration.add(Integer.parseInt(input.get(i+2)));
-                        cNum++;
+                    //saves all the values into lists
+                    for(int i = 1; i < input.size(); i+=2)
+                    {
+
+                        id.add(input.get(i));
+                        duration.add(Integer.parseInt(input.get(i+1)));
 
                     }
+
+                    //finishes the file reading
+                    success = true;
 
                 } 
                 catch (NoSuchElementException e) 
@@ -95,5 +90,29 @@ public class c3244203A2P3
         }
         //close file
         data.close();
+
+        System.out.println("No crashes bby");
+    }
+    
+}
+
+class Customer implements Runnable
+{
+    Customer()
+    {
+
+    }
+
+    public void run()
+    {
+        System.out.println("woot");
+    }
+}
+
+class CoffeeMachine
+{
+    CoffeeMachine()
+    {
+
     }
 }
