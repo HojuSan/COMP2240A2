@@ -97,7 +97,7 @@ public class c3244203A2P2
         data.close();
 
         //bug testing
-        System.out.println("starting to create customers");
+        //System.out.println("starting to create customers");
 
         //creating customers
         Customer[] c = new Customer[cNum];
@@ -113,10 +113,21 @@ public class c3244203A2P2
         Seat seat1 = new Seat(timer1);
         Thread th;
 
-        System.out.println("Customer    arrives     Seats       Leaves ");
+        System.out.println("Customer\tarrives\tSeats\tLeaves ");
 
         for(int i = 0; i<cNum;i++)
         {
+            try 
+            { 
+                //helps threads arriving at the same time, first in first serve
+                Thread.sleep(10); 
+            } 
+            catch (InterruptedException e) 
+            { 
+                // TODO Auto-generated catch block 
+                e.printStackTrace(); 
+            } 
+
             //creates the customer with values
             c[i] = new Customer(id.get(i), arrives.get(i), duration.get(i), seat1, timer1);
 
@@ -128,9 +139,10 @@ public class c3244203A2P2
     }//end of main
 }//end of class
 
-//thread
+//customer is a thread
 class Customer implements Runnable
 {
+    //variables
     private String id;
     private int arrives;
     private int sits;
@@ -190,6 +202,17 @@ class Customer implements Runnable
     {
         while(exit != true)
         {
+
+            try 
+            {
+                Thread.sleep(10);
+            } 
+            catch (Exception e)
+            {
+                //TODO: handle exception
+            }
+
+            //System.out.println(this.id + " Beep");
             if(this.arrives <= timer.getClock() && seat.getSeatAvailable())
             {
                 seat.eatIceCream(this);
@@ -219,43 +242,46 @@ class Seat
 
     //Getters
     public synchronized int getClock()
+    //public int getClock()
     {
         return clockCounter;
     }
 
-    public synchronized boolean getSeatAvailable()
+    //public synchronized boolean getSeatAvailable()
+    public boolean getSeatAvailable()
     {
         return seatAvailable;
     }
 
-    public synchronized void eatIceCream(Customer c)
+    //public synchronized void eatIceCream(Customer c)
+    public void eatIceCream(Customer c)
     {
-        //if 5 permits then reset flag system
-        if(seatSem.availablePermits()==5)
-        {
-            seatAvailable = true;
-        }
-        //if zero permits, that means all seats are full
-        if(seatSem.availablePermits()==0)
-        {
-            seatAvailable = false;
-        }
-
         try 
         {
             //aquire semaphore
             seatSem.acquire();
 
+            //if zero permits, that means all seats are full
+            if(seatSem.availablePermits()==0)
+            {
+                seatAvailable = false;
+            }
+
             //setting the time when customer sits
             c.setSits(timer.getClock());
+
 
             //setting the time when customer leaves
             c.setLeaves(c.getSits()+c.getDuration());
 
             //printing the values
-            System.out.println(c.getId()+"       "+c.getArrives() +"      "+c.getSits() +"     "+c.getLeaves() +" ");
+            System.out.println(c.getId()+"\t\t"+c.getArrives() +"\t"+c.getSits() +"\t"+c.getLeaves() +" ");
 
+            //thread is eating its delicious icecream
+            Thread.sleep(1000*c.getDuration());
+            //thread exits
             c.setExit();
+            //used to end the timer
             timer.upExitedCustomer();
            
         } 
@@ -267,6 +293,12 @@ class Seat
         //release semaphore
         seatSem.release();
 
+        //if 5 permits then reset flag system
+        if(seatSem.availablePermits()==5)
+        {
+            seatAvailable = true;
+        }
+
          //counter variable for the  arrival and leave times
          clockCounter++;
     }
@@ -275,11 +307,15 @@ class Seat
  
 }//end of class
 
+//timer for duration calculation
 class Timer implements Runnable
 {
+    //variables
     int clockCounter;
     int exitedCustomer = 0;
     int customerNum;
+
+    //constructor
     Timer(int customerNum)
     {
         clockCounter = 0;
@@ -287,7 +323,8 @@ class Timer implements Runnable
     }
 
     //getters
-    public synchronized int getClock()
+    //public synchronized int getClock()
+    public int getClock()
     {
         return clockCounter;
     }
@@ -297,27 +334,27 @@ class Timer implements Runnable
     {
         exitedCustomer++;
     }
-    
 
+    //run function
     public void run()
     {
-        for(;;) 
+        //while customers still exist run
+        while(exitedCustomer != customerNum) 
         { 
-            if(exitedCustomer == customerNum)
-            {
-                break;
-            }
-
-            try 
-            { 
-                Thread.sleep(1000); 
-                clockCounter++; 
-            } 
-            catch (InterruptedException e) 
-            { 
-                // TODO Auto-generated catch block 
-                e.printStackTrace(); 
-            } 
+                //increases clock counter after a second
+                //to allow more threads to try and access
+                try 
+                { 
+                    Thread.sleep(1000); 
+                    clockCounter++; 
+                } 
+                catch (InterruptedException e) 
+                { 
+                    // TODO Auto-generated catch block 
+                    e.printStackTrace(); 
+                } 
+            
+            
         }
     }
 }
