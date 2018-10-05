@@ -3,14 +3,13 @@ import java.io.FileNotFoundException;
 import java.util.NoSuchElementException;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.Scanner;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 import java.lang.String;
 import java.nio.file.*;
 import java.io.IOException;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.concurrent.locks.ReentrantLock;
 
 //main class
 public class c3244203A2P3
@@ -91,28 +90,129 @@ public class c3244203A2P3
         //close file
         data.close();
 
-        System.out.println("No crashes bby");
+        //creating customers
+        Customer[] c = new Customer[cNum];
+        //creating 5 seats
+        //
+        //
+        //Still not sure if i should make this into an array or not
+        Timer timer1 = new Timer(cNum);
+        Thread timeThread;
+        timeThread = new Thread(timer1);
+        timeThread.start();
+
+        CoffeeMachine cm = new CoffeeMachine(timer1);
+        Thread th;
+
+        for(int i = 0; i<cNum;i++)
+        {
+            try 
+            { 
+                //helps threads arriving at the same time, first in first serve
+                Thread.sleep(10); 
+            } 
+            catch (InterruptedException e) 
+            { 
+                // TODO Auto-generated catch block 
+                e.printStackTrace(); 
+            } 
+
+            //creates the customer with values
+            c[i] = new Customer(id.get(i), duration.get(i), cm, timer1);
+
+            //makes customer into a thread
+            th = new Thread(c[i]);
+            th.start();
+        }
     }
     
 }
 
 class Customer implements Runnable
 {
-    Customer()
-    {
 
+    //variables
+    private Timer timer;
+    private CoffeeMachine cm;
+    private String id;
+    private int duration;
+
+    //constructor
+    Customer(String id, int duration, CoffeeMachine cm, Timer timer)
+    {
+        this.id = id;
+        this.duration = duration;
+        this.cm = cm;
+        this.timer = timer;
     }
 
     public void run()
     {
-        System.out.println("woot");
+        if(this.id.contains("H") )
+        {
+            System.out.println(this.id + " is hot");
+        }
+        if(this.id.contains("C"))
+        {
+            System.out.println(this.id + " is cold");
+        }
     }
 }
 
 class CoffeeMachine
 {
-    CoffeeMachine()
-    {
 
+    //variables
+    private Customer c;
+    private Timer timer;
+
+    //constructor
+    CoffeeMachine(Timer timer)
+    {
+        this.timer = timer;
+    }
+
+    //this is where the magic happens
+    public void serveCoffee(Customer c)
+    {
+        if()
+        {
+            System.out.println("("+timer.getClock()+")  ");
+        }
+        if()
+        {
+
+        }
+        if()
+        {
+
+        }
+    }
+}
+
+class Timer implements Runnable
+{
+    int customerNum;
+    int clockCounter;
+
+    Timer(int customerNum)
+    {
+        clockCounter = 0;
+        this.customerNum = customerNum;
+    }
+
+    //Setters
+
+
+    //Getters
+    public int getClock()
+    {
+        return clockCounter;
+    }
+
+    //not functional yet
+    public void run()
+    {
+        clockCounter++;
     }
 }
