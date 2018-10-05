@@ -111,7 +111,7 @@ public class c3244203A2P3
             try 
             { 
                 //helps threads arriving at the same time, first in first serve
-                Thread.sleep(100); 
+                Thread.sleep(10); 
             } 
             catch (InterruptedException e) 
             { 
@@ -120,11 +120,12 @@ public class c3244203A2P3
             } 
 
             //creates the customer with values
-            c[i] = new Customer(id.get(i), duration.get(i), cm, timer1);
+            c[i] = new Customer(id.get(i), duration.get(i), i,cm, timer1);
 
             //makes customer into a thread
             th = new Thread(c[i]);
             th.start();
+            //System.out.println("order"+c[i].getOrder());
         }
     }
     
@@ -138,17 +139,30 @@ class Customer implements Runnable
     private CoffeeMachine cm;
     private String id;
     private int duration;
+    private ReentrantLock r;
+    private boolean finished;
+    private int order;
+    private int counter;
 
     //constructor
-    Customer(String id, int duration, CoffeeMachine cm, Timer timer)
+    Customer(String id, int duration, int order, CoffeeMachine cm, Timer timer)
     {
+        this.order = order;
         this.id = id;
         this.duration = duration;
         this.cm = cm;
         this.timer = timer;
+        r = new ReentrantLock();
+        finished = false;
+        counter = 0;
+
     }
 
     //Setters
+    public void cFinished()
+    {
+        finished = true;
+    }
 
     //Getters
     public String getId()
@@ -159,6 +173,10 @@ class Customer implements Runnable
     {
         return this.duration;
     }
+    public int getOrder()
+    {
+        return this.order;
+    }
 
 
     //reentrant lock, even if multiple threads have it, only
@@ -166,9 +184,67 @@ class Customer implements Runnable
     //the other threads have to wait before they can do shit
 
 
-    public void run()
+    public synchronized void run()
     {
-        cm.serveCoffee(this);
+
+        System.out.println(this.getId()+" order:"+this.getOrder());
+
+            if(order == counter)
+            {
+                r.lock();
+                counter++; 
+                r.unlock();
+
+                System.out.println(this.getId());
+
+                //if hot coffee is brewing and a cold coffee order comes in
+                //lock the thread
+                if(this.id.contains("H") && cm.getC()>0 || cm.getU()==3|| this.id.contains("C") && cm.getH()>0)
+                {
+                    r.lock();
+                    while(finished != true)
+                    {
+
+                        if(this.id.contains("H") && cm.getC()==0 && cm.getU()<3||this.id.contains("C") && cm.getH()==0 && cm.getU()<3)
+                        {
+                            
+                            cm.serveCoffee(this);
+                            //System.out.println("unlocked");
+                            
+
+                        }
+                        else
+                        {
+                            //System.out.println("waiting");
+                            try 
+                            { 
+                                //just wait
+                                Thread.sleep(1); 
+                            } 
+                            catch (InterruptedException e) 
+                            { 
+                                // TODO Auto-generated catch block 
+                                e.printStackTrace(); 
+                            } 
+                        }
+                            
+                    }
+                    r.unlock();
+
+                }
+                else
+                {
+                    cm.serveCoffee(this);
+                    r.lock();
+                    counter++; 
+                    r.unlock();
+                }
+            }
+
+
+            
+
+                
     }
 }
 
@@ -178,8 +254,6 @@ class CoffeeMachine
     //variables
     private Customer c;
     private Timer timer;
-    private Semaphore semTemp;
-    private ReentrantLock r;
     private int hCounter;
     private int cCounter;
     private int mUsed;
@@ -187,70 +261,86 @@ class CoffeeMachine
     //constructor
     CoffeeMachine(Timer timer)
     {
-        semTemp = new Semaphore(3);
-        r = new ReentrantLock();
         this.timer = timer;
         hCounter = 0;
         cCounter = 0;
         mUsed = 0;
     }
 
+    //setters
+    public void upH()
+    {
+        hCounter++;
+    }
+    public void upC()
+    {
+        cCounter++;
+    }
+
+    //getters
+    public int getH()
+    {
+        return hCounter;
+    }
+    public int getC()
+    {
+        return cCounter;
+    }
+    public int getU() 
+    {
+        return mUsed;
+    }
+
     //this is where the magic happens
     public void serveCoffee(Customer c)
     {
-        //initializes hot or cold coffee
-        if(semTemp.availablePermits()==3)
+     
+        
+        //if hot up hot counter in coffee machine
+        if(c.getId().contains("H"))
         {
-            if(c.getId().contains("H"))
-            {
-                hCounter++;
-            }
-            else
-            {
-                cCounter++;
-            }
+            hCounter++;
+        }
+        //else cold counter ++
+        else
+        {
+            cCounter++;
         }
 
-        //if hot coffee is brewing and a cold coffee order comes in
-        //lock the thread
-        if(c.getId().contains("H") && cCounter>0)
-        {
-            r.lock();
-        }
-        if(c.getId().contains("C") && hCounter>0)
-        {
-            r.lock();
-        }
-        
         try 
         {
-            //aquire semaphore
-            semTemp.acquire();
             mUsed++;
 
+            //System.out.println("mUsed is :"+mUsed+" hCounter is :"+hCounter+" cCounter is :"+cCounter);
             System.out.println("("+timer.getClock()+") "+ c.getId()+ " uses dispenser " +mUsed + "(time: "+ c.getDuration()+")");
 
             //thread is brewing delicious coffee
             Thread.sleep(1000*c.getDuration());
-           
+            //System.out.println("did it");
+        
         } 
         catch (Exception e) 
         {
             //TODO: handle exception
         }
 
-        //release semaphore
-        semTemp.release();
+        c.cFinished();
 
-        System.out.println(c.getId()+" has exited");
-
+        //System.out.println(c.getId()+" has exited");
+        if(c.getId().contains("H"))
+        {
+            hCounter--;
+        }
+        else
+        {
+            cCounter--;
+        }
         mUsed--;
         timer.upExit();
+        System.out.println(c.getId()+" used counter:"+mUsed + " hot counter:"+hCounter+" cold counter:" +cCounter);
+        
+        
 
-        if(mUsed == 0)
-        {
-            r.unlock();
-        }
 
     }
 }
@@ -290,6 +380,7 @@ class Timer implements Runnable
                 //to allow more threads to try and access
                 try 
                 { 
+                    //1second
                     Thread.sleep(1000); 
                     clockCounter++; 
                 } 
