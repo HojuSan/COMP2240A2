@@ -120,7 +120,7 @@ public class c3244203A2P2
             try 
             { 
                 //helps threads arriving at the same time, first in first serve
-                Thread.sleep(10); 
+                Thread.sleep(1); 
             } 
             catch (InterruptedException e) 
             { 
@@ -205,7 +205,7 @@ class Customer implements Runnable
 
             try 
             {
-                Thread.sleep(10);
+                Thread.sleep(1);
             } 
             catch (Exception e)
             {
@@ -227,7 +227,6 @@ class Customer implements Runnable
 class Seat
 {
     private static Semaphore seatSem;
-    private int clockCounter = 0;
     private boolean seatAvailable;
     private Timer timer;
 
@@ -241,11 +240,6 @@ class Seat
     //Setters
 
     //Getters
-    public synchronized int getClock()
-    //public int getClock()
-    {
-        return clockCounter;
-    }
 
     //public synchronized boolean getSeatAvailable()
     public boolean getSeatAvailable()
@@ -278,7 +272,7 @@ class Seat
             System.out.println(c.getId()+"\t\t"+c.getArrives() +"\t"+c.getSits() +"\t"+c.getLeaves() +" ");
 
             //thread is eating its delicious icecream
-            Thread.sleep(1000*c.getDuration());
+            Thread.sleep(200*c.getDuration());
             //thread exits
             c.setExit();
             //used to end the timer
@@ -299,8 +293,6 @@ class Seat
             seatAvailable = true;
         }
 
-         //counter variable for the  arrival and leave times
-         clockCounter++;
     }
 
 
@@ -345,7 +337,7 @@ class Timer implements Runnable
                 //to allow more threads to try and access
                 try 
                 { 
-                    Thread.sleep(1000); 
+                    Thread.sleep(200); 
                     clockCounter++; 
                 } 
                 catch (InterruptedException e) 
