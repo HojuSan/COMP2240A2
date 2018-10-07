@@ -186,64 +186,19 @@ class Customer implements Runnable
 
     public synchronized void run()
     {
+        if(this.order == cm.getCounter())
+        {
 
-        System.out.println(this.getId()+" order:"+this.getOrder());
-
-            if(order == counter)
+        }
+        else
+        {
+            //Sleep for 500 milliseconds ,improves readability
+            try
             {
-                r.lock();
-                counter++; 
-                r.unlock();
-
-                System.out.println(this.getId());
-
-                //if hot coffee is brewing and a cold coffee order comes in
-                //lock the thread
-                if(this.id.contains("H") && cm.getC()>0 || cm.getU()==3|| this.id.contains("C") && cm.getH()>0)
-                {
-                    r.lock();
-                    while(finished != true)
-                    {
-
-                        if(this.id.contains("H") && cm.getC()==0 && cm.getU()<3||this.id.contains("C") && cm.getH()==0 && cm.getU()<3)
-                        {
-                            
-                            cm.serveCoffee(this);
-                            //System.out.println("unlocked");
-                            
-
-                        }
-                        else
-                        {
-                            //System.out.println("waiting");
-                            try 
-                            { 
-                                //just wait
-                                Thread.sleep(1); 
-                            } 
-                            catch (InterruptedException e) 
-                            { 
-                                // TODO Auto-generated catch block 
-                                e.printStackTrace(); 
-                            } 
-                        }
-                            
-                    }
-                    r.unlock();
-
-                }
-                else
-                {
-                    cm.serveCoffee(this);
-                    r.lock();
-                    counter++; 
-                    r.unlock();
-                }
+                TimeUnit.MILLISECONDS.sleep(500);
             }
-
-
-            
-
+            catch (InterruptedException e) {} 
+        }
                 
     }
 }
@@ -254,59 +209,57 @@ class CoffeeMachine
     //variables
     private Customer c;
     private Timer timer;
-    private int hCounter;
-    private int cCounter;
+    private boolean hAcess;
+    private boolean cAcess;
     private int mUsed;
+    private int counter;
 
     //constructor
     CoffeeMachine(Timer timer)
     {
         this.timer = timer;
-        hCounter = 0;
-        cCounter = 0;
-        mUsed = 0;
+        this.hAcess = false;
+        this.cAcess = false;
+        this.mUsed = 0;
+        this.counter = 0;
     }
 
     //setters
-    public void upH()
+    //hot access
+    public void hA()
     {
-        hCounter++;
+        hAcess = true;
+        cAcess = false;
     }
-    public void upC()
+    public void cA()
     {
-        cCounter++;
+        hAcess = false;
+        cAcess = true;
     }
 
     //getters
     public int getH()
     {
-        return hCounter;
+        return hAcess;
     }
     public int getC()
     {
-        return cCounter;
+        return cAcess;
     }
     public int getU() 
     {
         return mUsed;
+    }
+    public int getCounter()
+    {
+        return counter;
     }
 
     //this is where the magic happens
     public void serveCoffee(Customer c)
     {
      
-        
-        //if hot up hot counter in coffee machine
-        if(c.getId().contains("H"))
-        {
-            hCounter++;
-        }
-        //else cold counter ++
-        else
-        {
-            cCounter++;
-        }
-
+ 
         try 
         {
             mUsed++;
@@ -326,19 +279,8 @@ class CoffeeMachine
 
         c.cFinished();
 
-        //System.out.println(c.getId()+" has exited");
-        if(c.getId().contains("H"))
-        {
-            hCounter--;
-        }
-        else
-        {
-            cCounter--;
-        }
         mUsed--;
-        timer.upExit();
-        System.out.println(c.getId()+" used counter:"+mUsed + " hot counter:"+hCounter+" cold counter:" +cCounter);
-        
+        timer.upExit(); 
         
 
 
