@@ -190,9 +190,8 @@ class Customer implements Runnable
         //as long as coffee hasn't brewed
         while(finished!=true)
         {
-            //System.out.println("counter "+this.order);
             //checks if its the order else, wait a bit try again
-            if(this.order == cm.getCounter())
+            if(this.order == cm.getCounter() && cm.getU()<3)
             {
                 //seats are full so wait then try again
                 while(cm.getU()==3)
@@ -228,7 +227,7 @@ class Customer implements Runnable
                 {
                     //System.out.println("Here");
                     //hot coffee brewing then cold order comes in
-                    if(this.id.contains("C")&&cm.getH()==true)
+                    if(this.id.contains("C")&&cm.getH()==true)//location of update
                     {
                         //locks the thread
                         r.lock();
@@ -243,6 +242,12 @@ class Customer implements Runnable
                             
                             if(cm.getU()==0)
                             {
+                                try
+                                {
+                                    Thread.sleep(1);
+                                }
+                                catch (InterruptedException e) {}
+                                //System.out.println("Cold got locked out then started");
                                 //reverses the coffee allowed to brew
                                 cm.cA();
                                 cm.upCounter();
@@ -255,7 +260,7 @@ class Customer implements Runnable
                         }
                     }
                     //cold coffee brewing then hot order comes in
-                    else if(this.id.contains("H")&&cm.getC()==true) 
+                    else if(this.id.contains("H")&&cm.getC()==true) //location of update
                     {
                         //locks the thread
                         r.lock();
@@ -270,6 +275,12 @@ class Customer implements Runnable
 
                             if(cm.getU()==0)
                             {
+                                try
+                                {
+                                    Thread.sleep(1);
+                                }
+                                catch (InterruptedException e) {}
+                                //System.out.println("hot got locked out then started");
                                 //reverses the coffee allowed to brew
                                 cm.hA();
                                 cm.upCounter();
@@ -281,22 +292,18 @@ class Customer implements Runnable
                         }
                     }
                     //just serves h or c if already serving
-                    else if(this.id.contains("H")&&cm.getH()==true ||this.id.contains("C")&&cm.getC()==true)
+                    else if(this.id.contains("H")&&cm.getH()==true||this.id.contains("C")&&cm.getC()==true)
                     {
                         cm.upCounter();
                         cm.serveCoffee(this);
-                        
                     }
                 }
                 //just serves h or c if already serving
-                else if(this.id.contains("H")&&cm.getH()==true ||this.id.contains("C")&&cm.getC()==true)
+                else if(this.id.contains("H")&&cm.getH()==true||this.id.contains("C")&&cm.getC()==true)
                 {
                     cm.upCounter();
                     cm.serveCoffee(this);
-                    
                 }
-
-                
             }
             else
             {
@@ -324,6 +331,9 @@ class CoffeeMachine
     private boolean cAcess;
     private int mUsed;
     private int counter;
+    private boolean d1,d2,d3,notPrinted;
+
+    
 
     //constructor
     CoffeeMachine(Timer timer)
@@ -333,6 +343,11 @@ class CoffeeMachine
         this.cAcess = false;
         this.mUsed = 0;
         this.counter = 0;
+        this.d1 =false;
+        this.d2 =false;
+        this.d3 =false;
+        this.notPrinted =false;
+
     }
 
     //setters
@@ -370,21 +385,37 @@ class CoffeeMachine
     {
         return counter;
     }
-
+    
     //this is where the magic happens
     public void serveCoffee(Customer c)
     {
-     
- 
+        int disNum =0;
         try 
         {
+
             mUsed++;
 
+            if(d1==false)
+            {
+                disNum = 1;
+                d1=true;
+            }
+            else if(d2==false)
+            {
+                disNum = 2;
+                d2=true;
+            }
+            else if(d3==false)
+            {
+                disNum = 3;
+                d3=true;
+            }
+
             //System.out.println("mUsed is :"+mUsed+" hCounter is :"+hCounter+" cCounter is :"+cCounter);
-            System.out.println("("+timer.getClock()+") "+ c.getId()+ " uses dispenser " +mUsed + "(time: "+ c.getDuration()+")");
+            System.out.println("("+timer.getClock()+") "+ c.getId()+ " uses dispenser " + disNum + "(time: "+ c.getDuration()+")");
 
             //thread is brewing delicious coffee
-            Thread.sleep(200*c.getDuration());
+            Thread.sleep(500*c.getDuration());
             //System.out.println("did it");
         
         } 
@@ -392,16 +423,29 @@ class CoffeeMachine
         {
             //TODO: handle exception
         }
+        
 
+        if(disNum == 1)
+        {
+            d1=false;
+        }
+        else if(disNum == 2)
+        {
+            d2=false;
+        }
+        else if(disNum == 3)
+        {
+            d3=false;
+        }
         c.cFinished();
         //seats being used becomes available
         mUsed--;
         timer.upExit();
-        if(timer.getExited() == timer.getCustomerNum())
+        if(timer.getExited() == timer.getCustomerNum() && notPrinted==false)
         {
+            notPrinted =true;
             System.out.println("("+timer.getClock()+")  DONE");
         }
-
 
     }
 }
@@ -448,21 +492,21 @@ class Timer implements Runnable
         //while customers still exist run
         while(exitedCustomer != customerNum) 
         { 
-                //increases clock counter after a second
-                //to allow more threads to try and access
-                try 
-                { 
-                    //1second
-                    Thread.sleep(200); 
-                    clockCounter++; 
-                    //bug testing
-                    //System.out.println("The time: ("+clockCounter+")");
-                } 
-                catch (InterruptedException e) 
-                { 
-                    // TODO Auto-generated catch block 
-                    e.printStackTrace(); 
-                } 
+            //increases clock counter after a second
+            //to allow more threads to try and access
+            try 
+            { 
+                //1second
+                Thread.sleep(500); 
+                clockCounter++; 
+                //bug testing
+                //System.out.println("The time: ("+clockCounter+")");
+            } 
+            catch (InterruptedException e) 
+            { 
+                // TODO Auto-generated catch block 
+                e.printStackTrace(); 
+            } 
             
             
         }
