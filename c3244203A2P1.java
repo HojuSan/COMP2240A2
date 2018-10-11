@@ -117,12 +117,14 @@ class Farmer implements Runnable
     {
         //for future reference this means the object itself
         //aka the farmer for this
+        //variables
         this.id = id;
         this.location = location;
         this.home = location;
         this.bridge = bridge;
         this.crossed = 0;
 
+        //setting destination
         if(location=="North")
         {
             destination = "South"; 
@@ -132,6 +134,7 @@ class Farmer implements Runnable
             destination = "North";
         }
 
+        //once thread has started it begins to wait for the bridge
         System.out.println(id + ": Waiting for bridge. Going towards " + destination);  
 
     }
@@ -173,6 +176,7 @@ class Farmer implements Runnable
             //starvation prevention using counter system
             if(this.crossed <= bridge.getStarve())
             { 
+                //starts crossing
                 bridge.crossBridge(this);
                 try 
                 {
@@ -180,6 +184,7 @@ class Farmer implements Runnable
                 } 
                 catch (InterruptedException e) {}
 
+                //once it finishes it waits again
                 System.out.println(this.id + ": Waiting for bridge. Going towards " + destination); 
             }
             //waits a bit before it retries
@@ -222,7 +227,6 @@ class Bridge
      {
         return neon;
     }
-
     public synchronized int getStarve()
     {
         return starvePre;
@@ -286,6 +290,8 @@ class Bridge
                 counter = 0;
             }
 
+            //the farmer crossed goes up so farmers with
+            //less crossed can have higher priority
             f.upCrossed();
 
             //bug testing for starvation

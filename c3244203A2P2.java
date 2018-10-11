@@ -40,26 +40,19 @@ public class c3244203A2P2
             //try catch for getting the correct file
             try 
             {
-//  this is the section with the bugg
-
-//
                 //changes line into string
                 String str = data.nextLine();
                 //converts the string name of the file into an actual file 
                 //that the code can read
                 Scanner file1 = new Scanner(new File(str));
-                //try catch for getting correct contents of the file
-
-//
+                //try catch for getting correct contents of the file/
                 try 
                 {
-                    //split by  into string array outside while loop
                     //split by  into string array outside while loop
                     while(file1.hasNext())
                     {
                         token1 = file1.next();
                         input.add(token1);
-                        //input = file.nextLine().split("\\s+");
                     }                  
 
                     for(int i = 0; i < input.size(); i+=3)
@@ -101,10 +94,7 @@ public class c3244203A2P2
 
         //creating customers
         Customer[] c = new Customer[cNum];
-        //creating 5 seats
-        //
-        //
-        //Still not sure if i should make this into an array or not
+        //making and starting the timer
         Timer timer1 = new Timer(cNum);
         Thread timeThread;
         timeThread = new Thread(timer1);
@@ -115,6 +105,7 @@ public class c3244203A2P2
 
         System.out.println("Customer\tarrives\tSeats\tLeaves ");
 
+        //loop to start all the customers
         for(int i = 0; i<cNum;i++)
         {
             try 
@@ -152,6 +143,7 @@ class Customer implements Runnable
     private Seat seat;
     private Timer timer;
 
+    //constructor
     public Customer(String id, int arrives, int duration, Seat seat, Timer timer)
     {
         this.id = id;
@@ -197,6 +189,7 @@ class Customer implements Runnable
         this.exit = true;
     }
 
+    //run function
     @Override
     public void run()
     {
@@ -212,9 +205,9 @@ class Customer implements Runnable
                 //TODO: handle exception
             }
 
-            //System.out.println(this.id + " Beep");
             if(this.arrives <= timer.getClock() && seat.getSeatAvailable())
             {
+                //begins eating the ice cream
                 seat.eatIceCream(this);
             }
             
@@ -226,20 +219,18 @@ class Customer implements Runnable
 //uses semaphore
 class Seat
 {
+    //variables
     private static Semaphore seatSem;
     private boolean seatAvailable;
     private Timer timer;
 
+    //constructor
     public Seat(Timer timer)
     {
         seatSem = new Semaphore(5);
         seatAvailable = true;
         this.timer = timer;
     }
-
-    //Setters
-
-    //Getters
 
     //public synchronized boolean getSeatAvailable()
     public boolean getSeatAvailable()

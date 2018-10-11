@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -331,7 +332,8 @@ class CoffeeMachine
     private boolean cAcess;
     private int mUsed;
     private int counter;
-    private boolean d1,d2,d3,notPrinted;
+    private boolean d1,d2,d3;
+    private boolean notFinished;
 
     
 
@@ -346,7 +348,8 @@ class CoffeeMachine
         this.d1 =false;
         this.d2 =false;
         this.d3 =false;
-        this.notPrinted =false;
+        this.notFinished =false;
+        
 
     }
 
@@ -385,16 +388,21 @@ class CoffeeMachine
     {
         return counter;
     }
+    public boolean getFinished()
+    {
+        return notFinished;
+    }
     
     //this is where the magic happens
     public void serveCoffee(Customer c)
     {
-        int disNum =0;
         try 
         {
 
+            //ups the used counter
             mUsed++;
 
+            //decides what dispenser is going to be used
             if(d1==false)
             {
                 disNum = 1;
@@ -411,12 +419,10 @@ class CoffeeMachine
                 d3=true;
             }
 
-            //System.out.println("mUsed is :"+mUsed+" hCounter is :"+hCounter+" cCounter is :"+cCounter);
             System.out.println("("+timer.getClock()+") "+ c.getId()+ " uses dispenser " + disNum + "(time: "+ c.getDuration()+")");
 
             //thread is brewing delicious coffee
-            Thread.sleep(500*c.getDuration());
-            //System.out.println("did it");
+            TimeUnit.MILLISECONDS.sleep(500*c.getDuration());
         
         } 
         catch (Exception e) 
@@ -425,6 +431,8 @@ class CoffeeMachine
         }
         
 
+        //seats being used becomes available
+        //dispenser check system
         if(disNum == 1)
         {
             d1=false;
@@ -437,14 +445,18 @@ class CoffeeMachine
         {
             d3=false;
         }
+        
         c.cFinished();
-        //seats being used becomes available
         mUsed--;
         timer.upExit();
-        if(timer.getExited() == timer.getCustomerNum() && notPrinted==false)
+
+        //printing once last coffee is brewed
+        if(timer.getExited() == timer.getCustomerNum() && notFinished==false)
         {
-            notPrinted =true;
-            System.out.println("("+timer.getClock()+")  DONE");
+            
+            System.out.println("("+timer.getClock()+") DONE");
+            notFinished =true;
+            timer.finish();
         }
 
     }
@@ -453,10 +465,10 @@ class CoffeeMachine
 class Timer implements Runnable
 {
     //variables
-    int customerNum;
-    int clockCounter;
-    int exitedCustomer;
-
+    private int customerNum;
+    private int clockCounter;
+    private int exitedCustomer;
+    private boolean exited;
 
     //constructor
     Timer(int customerNum)
@@ -464,6 +476,7 @@ class Timer implements Runnable
         clockCounter = 0;
         this.customerNum = customerNum;
         this.exitedCustomer = 0;
+        this.exited = false;
     }
 
     //Setters
@@ -471,7 +484,10 @@ class Timer implements Runnable
     {
         exitedCustomer++;
     }
-
+    public void finish()
+    {
+        exited=true;
+    }
     //Getters
     public int getClock()
     {
@@ -490,17 +506,15 @@ class Timer implements Runnable
     public void run()
     {
         //while customers still exist run
-        while(exitedCustomer != customerNum) 
+        while(exited!=true) 
         { 
             //increases clock counter after a second
             //to allow more threads to try and access
             try 
             { 
                 //1second
-                Thread.sleep(500); 
+                TimeUnit.MILLISECONDS.sleep(500);
                 clockCounter++; 
-                //bug testing
-                //System.out.println("The time: ("+clockCounter+")");
             } 
             catch (InterruptedException e) 
             { 
